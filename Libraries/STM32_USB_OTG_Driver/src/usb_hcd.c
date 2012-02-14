@@ -97,6 +97,7 @@ uint32_t HCD_Init(USB_OTG_CORE_HANDLE *pdev ,
   for (i= 0; i< USB_OTG_MAX_TX_FIFOS; i++)
   {
   pdev->host.ErrCnt[i]  = 0;
+  pdev->host.NakCnt[i]  = 0;
   pdev->host.XferCnt[i]   = 0;
   pdev->host.HC_Status[i]   = HC_IDLE;
   }

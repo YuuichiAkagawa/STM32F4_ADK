@@ -230,6 +230,11 @@ enum USB_OTG_SPEED {
   USB_SPEED_HIGH
 };
 
+
+#ifndef USB_NAK_RETRY_ATTEMPTS
+#define USB_NAK_RETRY_ATTEMPTS 100
+#endif
+
 #endif //__USB_DEFINES__H__
 
 

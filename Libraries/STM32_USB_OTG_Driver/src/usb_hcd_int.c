@@ -475,6 +475,7 @@ uint32_t USB_OTG_USBH_handle_hc_n_Out_ISR (USB_OTG_CORE_HANDLE *pdev , uint32_t 
   else if (hcint.b.xfercompl)
   {
     pdev->host.ErrCnt[num] = 0;
+    pdev->host.NakCnt[num] = 0;
     UNMASK_HOST_INT_CHH (num);
     USB_OTG_HC_Halt(pdev, num);
     CLEAR_HC_INT(hcreg , xfercompl);
@@ -492,6 +493,7 @@ uint32_t USB_OTG_USBH_handle_hc_n_Out_ISR (USB_OTG_CORE_HANDLE *pdev , uint32_t 
   else if (hcint.b.nak)
   {
     pdev->host.ErrCnt[num] = 0;
+    pdev->host.NakCnt[num]++;
     UNMASK_HOST_INT_CHH (num);
     USB_OTG_HC_Halt(pdev, num);
     CLEAR_HC_INT(hcreg , nak);
@@ -599,6 +601,7 @@ uint32_t USB_OTG_USBH_handle_hc_n_In_ISR (USB_OTG_CORE_HANDLE *pdev , uint32_t n
   }  
   else if (hcint.b.ack)
   {
+    pdev->host.NakCnt[num] = 0;
     CLEAR_HC_INT(hcreg ,ack);
   }
   
@@ -632,6 +635,7 @@ uint32_t USB_OTG_USBH_handle_hc_n_In_ISR (USB_OTG_CORE_HANDLE *pdev , uint32_t n
   
   else if (hcint.b.xfercompl)
   {
+    pdev->host.NakCnt[num] = 0;
     
     if (pdev->cfg.dma_enable == 1)
     {
@@ -700,6 +704,7 @@ uint32_t USB_OTG_USBH_handle_hc_n_In_ISR (USB_OTG_CORE_HANDLE *pdev , uint32_t n
   }
   else if (hcint.b.nak)  
   {  
+    pdev->host.NakCnt[num]++;
     if(hcchar.b.eptype == EP_TYPE_INTR)
     {
       UNMASK_HOST_INT_CHH (num);
@@ -710,9 +715,20 @@ uint32_t USB_OTG_USBH_handle_hc_n_In_ISR (USB_OTG_CORE_HANDLE *pdev , uint32_t n
              (hcchar.b.eptype == EP_TYPE_BULK))
     {
       /* re-activate the channel  */
-      hcchar.b.chen = 1;
-      hcchar.b.chdis = 0;
-      USB_OTG_WRITE_REG32(&pdev->regs.HC_REGS[num]->HCCHAR, hcchar.d32); 
+//      hcchar.b.chen = 1;
+//      hcchar.b.chdis = 0;
+//      USB_OTG_WRITE_REG32(&pdev->regs.HC_REGS[num]->HCCHAR, hcchar.d32); 
+      /* dmz: check retrying number to avoid an eternal loop in interrupt handler */
+      if( pdev->host.NakCnt[num] < USB_NAK_RETRY_ATTEMPTS ) {
+          hcchar.b.chen = 1;
+          hcchar.b.chdis = 0;
+          USB_OTG_WRITE_REG32(&pdev->regs.HC_REGS[num]->HCCHAR, hcchar.d32); 
+      } else {
+          pdev->host.ErrCnt[num] ++;
+          pdev->host.NakCnt[num] = 0;
+          pdev->host.HC_Status[num] = HC_NAK;
+          CLEAR_HC_INT(hcreg , nak);
+      }
     }
     pdev->host.HC_Status[num] = HC_NAK;
   }

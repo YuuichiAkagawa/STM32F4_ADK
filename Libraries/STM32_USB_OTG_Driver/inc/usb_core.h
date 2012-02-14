@@ -267,6 +267,7 @@ typedef struct _HCD
   __IO uint32_t            ConnSts;
   __IO uint32_t            ErrCnt[USB_OTG_MAX_TX_FIFOS];
   __IO uint32_t            XferCnt[USB_OTG_MAX_TX_FIFOS];
+  __IO uint32_t            NakCnt[USB_OTG_MAX_TX_FIFOS];
   __IO HC_STATUS           HC_Status[USB_OTG_MAX_TX_FIFOS];  
   __IO URB_STATE           URB_State[USB_OTG_MAX_TX_FIFOS];
   USB_OTG_HC               hc [USB_OTG_MAX_TX_FIFOS];
