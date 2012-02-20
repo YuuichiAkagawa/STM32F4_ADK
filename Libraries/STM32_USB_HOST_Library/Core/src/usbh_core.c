@@ -164,6 +164,7 @@ void USBH_Init(USB_OTG_CORE_HANDLE *pdev,
   pdev->host.port_cb->ConnStatus = 0;   
   pdev->host.port_cb->DisconnStatus = 0; 
   
+  pdev->host.NakRetryLimit = USB_NAK_RETRY_ATTEMPTS;
     
   /* Start the USB OTG core */     
    HCD_Init(pdev , coreID);
@@ -581,7 +582,7 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
   static uint16_t timeout = 0;
   USBH_Status status = USBH_OK;
   URB_STATE URB_Status = URB_IDLE;
-  
+
   phost->Control.status = CTRL_START;
 
   
@@ -697,8 +698,14 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
     break;
     
   case CTRL_DATA_OUT_WAIT:
-    
-    URB_Status = HCD_GetURB_State(pdev , phost->Control.hc_num_out);     
+
+	URB_Status = HCD_GetURB_State(pdev , phost->Control.hc_num_out);
+    //NAK received. Retry.
+    if (pdev->host.ErrCnt[phost->Control.hc_num_out] > 0){
+    	pdev->host.ErrCnt[phost->Control.hc_num_out] = 0;
+    	phost->Control.state = CTRL_DATA_OUT;
+		break;
+    }
     if  (URB_Status == URB_DONE)
     { /* If the Setup Pkt is sent successful, then change the state */
       phost->Control.state = CTRL_STATUS_IN;
@@ -735,9 +742,16 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
     break;
     
   case CTRL_STATUS_IN_WAIT:
-    
-    URB_Status = HCD_GetURB_State(pdev , phost->Control.hc_num_in); 
-    
+
+    URB_Status = HCD_GetURB_State(pdev , phost->Control.hc_num_in);
+
+    //NAK received. Retry.
+    if (pdev->host.ErrCnt[phost->Control.hc_num_in] > 0){
+//    	phost->Control.state = CTRL_STATUS_IN;
+    	phost->Control.state = CTRL_DATA_OUT;
+    	pdev->host.ErrCnt[phost->Control.hc_num_in] = 0;
+    	break;
+    }
     if  ( URB_Status == URB_DONE)
     { /* Control transfers completed, Exit the State Machine */
       phost->gState =   phost->gStateBkp;

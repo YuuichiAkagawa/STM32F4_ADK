@@ -272,6 +272,7 @@ typedef struct _HCD
   __IO URB_STATE           URB_State[USB_OTG_MAX_TX_FIFOS];
   USB_OTG_HC               hc [USB_OTG_MAX_TX_FIFOS];
   uint16_t                 channel [USB_OTG_MAX_TX_FIFOS];
+  __IO uint32_t            NakRetryLimit;
   USB_OTG_hPort_TypeDef    *port_cb;  
 }
 HCD_DEV , *USB_OTG_USBH_PDEV;

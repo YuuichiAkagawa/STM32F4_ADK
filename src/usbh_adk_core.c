@@ -3,7 +3,7 @@
   * @file    usbh_adk_core.c
   * @author  Yuuichi Akagawa
   * @version V1.0.0
-  * @date    2012/01/22
+  * @date    2012/02/21
   * @brief   Android Open Accessory implementation
   ******************************************************************************
   * @attention
@@ -144,6 +144,9 @@ void USBH_ADK_InterfaceDeInit ( USB_OTG_CORE_HANDLE *pdev, void *phost)
 	    USBH_Free_Channel  (pdev, ADK_Machine.hc_num_in);
 	    ADK_Machine.hc_num_in = 0;     /* Reset the Channel as Free */
 	}
+
+	//restore default value
+	pdev->host.NakRetryLimit = USB_NAK_RETRY_ATTEMPTS;
 }
 
 /**
@@ -179,11 +182,11 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 		case ADK_INIT_GET_PROTOCOL:
 			if ( USBH_ADK_getProtocol ( pdev, phost ) == USBH_OK ){
 				if (ADK_Machine.protocol == 1) {
-//					ADK_Machine.initstate = ADK_INIT_SWITCHING;
 					ADK_Machine.initstate = ADK_INIT_SEND_MANUFACTURER;
 #ifdef DEBUG
 					xputs("ADK:device supports protcol 1\n");
 #endif
+				  	pdev->host.NakRetryLimit = 10;
 				} else {
 					ADK_Machine.initstate = ADK_INIT_FAILED;
 		#ifdef DEBUG
@@ -195,7 +198,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 	  case ADK_INIT_SEND_MANUFACTURER:
 //		    Delay(20);
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_MANUFACTURER, (uint8_t*)ADK_Machine.acc_manufacturer)== USBH_OK ){
-//				ADK_Machine.initstate = ADK_INIT_SWITCHING;
 				ADK_Machine.initstate = ADK_INIT_SEND_MODEL;
 #ifdef DEBUG
 					xputs("ADK:SEND_MANUFACTURER\n");
@@ -279,6 +281,7 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 	  case ADK_INIT_DONE:
 		  	status = USBH_OK;
 		  	ADK_Machine.state = ADK_IDLE;
+		  	pdev->host.NakRetryLimit = 100;
 #ifdef DEBUG
 					xputs("ADK:configuration complete.\n");
 #endif
@@ -365,6 +368,7 @@ static USBH_Status USBH_ADK_getProtocol ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *
 static USBH_Status USBH_ADK_sendString ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost, uint16_t index, uint8_t* buff)
 {
 	USBH_Status status;
+	URB_STATE URB_Status = URB_IDLE;
 	uint16_t length;
 	length = (uint16_t)strlen(buff)+1;
 #ifdef DEBUG
@@ -377,17 +381,7 @@ static USBH_Status USBH_ADK_sendString ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *p
 	phost->Control.setup.b.wLength.w = length;
 
 	/* Control Request */
-	status = USBH_CtlReq(pdev, phost, buff , length );
-	if( status == USBH_OK ){
-		if (pdev->host.ErrCnt[phost->Control.hc_num_out] > 0 && pdev->host.ErrCnt[phost->Control.hc_num_out] < 5){
-			status = USBH_BUSY;
-#ifdef DEBUG
-			  sprintf((char *)temp, "sendString[NAK]:%d: Err:%d\n", index, pdev->host.ErrCnt[phost->Control.hc_num_out]);
-			  xputs(temp);
-#endif
-		}
-	}
-	return status;
+	return USBH_CtlReq(pdev, phost, buff , length );
 }
 
 static USBH_Status USBH_ADK_switch ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)

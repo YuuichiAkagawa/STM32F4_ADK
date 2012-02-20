@@ -719,7 +719,7 @@ uint32_t USB_OTG_USBH_handle_hc_n_In_ISR (USB_OTG_CORE_HANDLE *pdev , uint32_t n
 //      hcchar.b.chdis = 0;
 //      USB_OTG_WRITE_REG32(&pdev->regs.HC_REGS[num]->HCCHAR, hcchar.d32); 
       /* dmz: check retrying number to avoid an eternal loop in interrupt handler */
-      if( pdev->host.NakCnt[num] < USB_NAK_RETRY_ATTEMPTS ) {
+      if( pdev->host.NakCnt[num] < pdev->host.NakRetryLimit ) {
           hcchar.b.chen = 1;
           hcchar.b.chdis = 0;
           USB_OTG_WRITE_REG32(&pdev->regs.HC_REGS[num]->HCCHAR, hcchar.d32); 

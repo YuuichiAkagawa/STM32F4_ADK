@@ -3,7 +3,7 @@
   * @file    main.c
   * @author  Yuuichi Akagawa
   * @version V1.0.0
-  * @date    2012/01/22
+  * @date    2012/02/21
   * @brief   Android Open Accessory implementation
   ******************************************************************************
   * @attention
@@ -122,7 +122,7 @@ int main(void)
     	}
     	USBH_ADK_write(&USB_OTG_Core_dev, msg, 2);
     }
-    Delay(5);
+    Delay(1);
 
     if (i++ == 100)
     {
