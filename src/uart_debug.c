@@ -1,9 +1,28 @@
-/*
- * uart_debug.c
- *
- *  Created on: Jan 28, 2012
- *      Author: akagawa
- */
+/**
+  ******************************************************************************
+  * @file    uart_debug.c
+  * @author  Yuuichi Akagawa
+  * @version V1.0.0
+  * @date    2012/02/27
+  * @brief   UART debug out utility
+  ******************************************************************************
+  * @attention
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+  *
+  *      http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  * <h2><center>&copy; COPYRIGHT (C)2012 Yuuichi Akagawa</center></h2>
+  *
+  ******************************************************************************
+  */
 
 /* Includes */
 #include "stm32f4xx.h"
@@ -29,7 +48,7 @@ void uart_debug_init()
 	  USART_InitTypeDef USART_InitStructure;
 	  GPIO_InitTypeDef GPIO_InitStructure;
 	  /* USARTx configured as follow:
-	        - BaudRate = 9600 baud
+	        - BaudRate = 230400 baud
 	        - Word Length = 8 Bits
 	        - One Stop Bit
 	        - No parity
@@ -86,29 +105,3 @@ void uart_debug_putc( unsigned char c)
 	  {}
 }
 
-void LogicAnalyzerTirggerConfig(void)
-{
-	  GPIO_InitTypeDef  GPIO_InitStructure;
-
-	  /* Enable the GPIO_LED Clock */
-	  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-
-	  /* Configure the GPIO_LED pin */
-	  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-	  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-	  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	  GPIO_Init(GPIOA, &GPIO_InitStructure);
-}
-
-void LogicAnalyzerTirgger(uint8_t t)
-{
-	if( t == 1 ){
-	    /* Reset GPIO Port */
-	    GPIOA->BSRRH = GPIO_Pin_1;
-	}else{
-	    /* Set GPIO Port */
-	    GPIOG->BSRRL = GPIO_Pin_1;
-	}
-}

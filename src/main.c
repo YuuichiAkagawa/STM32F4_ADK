@@ -3,7 +3,7 @@
   * @file    main.c
   * @author  Yuuichi Akagawa
   * @version V1.0.0
-  * @date    2012/02/21
+  * @date    2012/02/27
   * @brief   Android Open Accessory implementation
   ******************************************************************************
   * @attention
@@ -81,7 +81,10 @@ int main(void)
   RCC_GetClocksFreq(&RCC_Clocks);
   SysTick_Config(RCC_Clocks.HCLK_Frequency / 1000);
 
+#ifdef DEBUG
+  /* Init Debug out setting(UART2) */
   uart_debug_init();
+#endif
 
   /* Init Host Library */
   USBH_Init(&USB_OTG_Core_dev,
@@ -89,6 +92,8 @@ int main(void)
             &USB_Host,
             &USBH_ADK_cb,
             &USR_Callbacks);
+
+  /* Init ADK Library */
   USBH_ADK_Init("ammlab.org", "HelloADK", "DemoKit", "1.0", "http://www.ammlab.org",  "1234567");
 
   while (1)

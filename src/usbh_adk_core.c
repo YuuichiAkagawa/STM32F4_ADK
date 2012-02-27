@@ -3,7 +3,7 @@
   * @file    usbh_adk_core.c
   * @author  Yuuichi Akagawa
   * @version V1.0.0
-  * @date    2012/02/21
+  * @date    2012/02/27
   * @brief   Android Open Accessory implementation
   ******************************************************************************
   * @attention
@@ -28,7 +28,11 @@
 #include "usbh_adk_core.h"
 #include "uart_debug.h"
 #include <stdlib.h>
+#include <stdio.h>
 
+/** @defgroup USBH_ADK_CORE_Private_Variables
+* @{
+*/
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
   #if defined ( __ICCARM__ ) /*!< IAR Compiler */
     #pragma data_alignment=4
@@ -43,16 +47,13 @@ __ALIGN_BEGIN ADK_Machine_TypeDef         ADK_Machine __ALIGN_END ;
 #endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */
 __ALIGN_BEGIN USB_Setup_TypeDef           ADK_Setup __ALIGN_END ;
 
-__IO uint8_t flag = 0;
+/**
+* @}
+*/
 
-/** @defgroup USBH_USR_Private_Variables
+/** @defgroup USBH_ADK_CORE_Private_FunctionPrototypes
 * @{
 */
-extern USB_OTG_CORE_HANDLE           USB_OTG_Core_dev;
-/*  Points to the DEVICE_PROP structure of current device */
-/*  The purpose of this register is to speed up the execution */
-
-
 static USBH_Status USBH_ADK_InterfaceInit  (USB_OTG_CORE_HANDLE *pdev, void *phost);
 static void USBH_ADK_InterfaceDeInit  (USB_OTG_CORE_HANDLE *pdev, void *phost);
 static USBH_Status USBH_ADK_Handle(USB_OTG_CORE_HANDLE *pdev, void *phost);
@@ -62,7 +63,6 @@ static USBH_Status USBH_ADK_sendString ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *p
 static USBH_Status USBH_ADK_switch ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost);
 static USBH_Status USBH_ADK_configAndroid ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost);
 
-/* Private functions */
 USBH_Class_cb_TypeDef USBH_ADK_cb =
 {
     USBH_ADK_InterfaceInit,
@@ -70,7 +70,21 @@ USBH_Class_cb_TypeDef USBH_ADK_cb =
     USBH_ADK_ClassRequest,
     USBH_ADK_Handle,
 };
+/**
+* @}
+*/
 
+/**
+  * @brief  USBH_ADK_Init
+  *         Initialization for ADK class.
+  * @param  manufacture: manufacturer name string(max 63 chars)
+  * @param  model: model name string (max 63 chars)
+  * @param  description: description string (max 63 chars)
+  * @param  version: version string (max 63 chars)
+  * @param  uri: URI string (max 63 chars)
+  * @param  serial: serial number string (max 63 chars)
+  * @retval None
+  */
 void USBH_ADK_Init(uint8_t* manufacture, uint8_t* model, uint8_t* description, uint8_t* version, uint8_t* uri, uint8_t* serial)
 {
 	strncpy(ADK_Machine.acc_manufacturer, manufacture, 64);
@@ -99,8 +113,7 @@ void USBH_ADK_Init(uint8_t* manufacture, uint8_t* model, uint8_t* description, u
   */
 static USBH_Status USBH_ADK_InterfaceInit ( USB_OTG_CORE_HANDLE *pdev, void *phost)
 {
-	USBH_HOST *pphost = phost;
-	USBH_Status status = USBH_OK; //USBH_BUSY ;
+	USBH_Status status = USBH_OK; //USBH_OK ;
 
 	ADK_Machine.inSize = 0;
 	ADK_Machine.outSize = 0;
@@ -125,7 +138,7 @@ void USBH_ADK_InterfaceDeInit ( USB_OTG_CORE_HANDLE *pdev, void *phost)
 #endif
 	ADK_Machine.initstate = ADK_INIT_SETUP;
 
-	/* Re-enumeration ?*/
+	/* Switch to accessory mode,  Re-enumeration */
 	if(ADK_Machine.state == ADK_INITIALIZING)
 	{
 		pdev->host.ConnSts = 1;
@@ -186,7 +199,8 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 #ifdef DEBUG
 					xputs("ADK:device supports protcol 1\n");
 #endif
-				  	pdev->host.NakRetryLimit = 10;
+					/* minimize NAK retry limit */
+				  	pdev->host.NakRetryLimit = USBH_ADK_NAK_RETRY_LIMIT;
 				} else {
 					ADK_Machine.initstate = ADK_INIT_FAILED;
 		#ifdef DEBUG
@@ -196,7 +210,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			}
 			break;
 	  case ADK_INIT_SEND_MANUFACTURER:
-//		    Delay(20);
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_MANUFACTURER, (uint8_t*)ADK_Machine.acc_manufacturer)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_SEND_MODEL;
 #ifdef DEBUG
@@ -205,7 +218,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			}
 			break;
 	  case ADK_INIT_SEND_MODEL:
-//		    Delay(20);
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_MODEL, (uint8_t*)ADK_Machine.acc_model)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_SEND_VERSION;
 #ifdef DEBUG
@@ -214,7 +226,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			}
 			break;
 	  case ADK_INIT_SEND_VERSION:
-//		    Delay(20);
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_VERSION, (uint8_t*)ADK_Machine.acc_version)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_SEND_DESCRIPTION;
 #ifdef DEBUG
@@ -223,7 +234,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			}
 			break;
 	  case ADK_INIT_SEND_DESCRIPTION:
-//		    Delay(20);
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_DESCRIPTION, (uint8_t*)ADK_Machine.acc_description)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_SEND_URI;
 #ifdef DEBUG
@@ -232,7 +242,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			}
 			break;
 	  case ADK_INIT_SEND_URI:
-//		    Delay(20);
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_URI, (uint8_t*)ADK_Machine.acc_uri)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_SEND_SERIAL;
 #ifdef DEBUG
@@ -241,7 +250,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			}
 			break;
 	  case ADK_INIT_SEND_SERIAL:
-//		    Delay(20);
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_SERIAL, (uint8_t*)ADK_Machine.acc_serial)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_SWITCHING;
 #ifdef DEBUG
@@ -250,7 +258,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			}
 			break;
 	  case ADK_INIT_SWITCHING:
-//		    Delay(20);
 			if( USBH_ADK_switch ( pdev, phost)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_GET_DEVDESC;
 #ifdef DEBUG
@@ -274,23 +281,26 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 				}
 			}
 			break;
+
 	  case ADK_INIT_CONFIGURE_ANDROID:
 		    USBH_ADK_configAndroid(pdev, phost);
 		    ADK_Machine.initstate = ADK_INIT_DONE;
 		  	break;
+
 	  case ADK_INIT_DONE:
 		  	status = USBH_OK;
 		  	ADK_Machine.state = ADK_IDLE;
-		  	pdev->host.NakRetryLimit = 100;
+			/* minimize NAK retry limit */
+		  	pdev->host.NakRetryLimit = USBH_ADK_NAK_RETRY_LIMIT;
 #ifdef DEBUG
 					xputs("ADK:configuration complete.\n");
 #endif
 		  	break;
 
-
 	  case ADK_INIT_FAILED:
 			status = USBH_UNRECOVERED_ERROR;
 			break;
+
 	  default:
 		  break;
 	  }
@@ -305,10 +315,8 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
   * @param  hdev: Selected device property
   * @retval USBH_Status
   */
-
 static USBH_Status USBH_ADK_Handle(USB_OTG_CORE_HANDLE *pdev, void   *phost)
 {
-	USBH_HOST *pphost = phost;
 	USBH_Status status = USBH_BUSY;
 	URB_STATE URB_Status;
 	HC_STATUS HCD_Status;
@@ -318,19 +326,19 @@ static USBH_Status USBH_ADK_Handle(USB_OTG_CORE_HANDLE *pdev, void   *phost)
 	{
 		case ADK_IDLE:
 			ADK_Machine.state = ADK_SEND_DATA;
+
 		case ADK_SEND_DATA:
 			URB_Status = HCD_GetURB_State(pdev , ADK_Machine.hc_num_out);
 			HCD_Status = HCD_GetHCState(pdev , ADK_Machine.hc_num_out);
 			HCD_GXferCnt = HCD_GetXferCnt(pdev , ADK_Machine.hc_num_out);
-//			if( URB_Status > URB_DONE){
-//				break;
-//			}
+
 			if(ADK_Machine.outSize > 0){
 				USBH_BulkSendData(pdev, ADK_Machine.outbuff, ADK_Machine.outSize, ADK_Machine.hc_num_out);
 				ADK_Machine.outSize = 0;
 				ADK_Machine.state = ADK_GET_DATA;
 			}
 			break;
+
 		case ADK_GET_DATA:
 			URB_Status = HCD_GetURB_State(pdev , ADK_Machine.hc_num_in);
 			HCD_Status = HCD_GetHCState(pdev , ADK_Machine.hc_num_in);
@@ -340,21 +348,29 @@ static USBH_Status USBH_ADK_Handle(USB_OTG_CORE_HANDLE *pdev, void   *phost)
 			}
 			USBH_BulkReceiveData(pdev, ADK_Machine.inbuff, 2, ADK_Machine.hc_num_in);
 			ADK_Machine.state = ADK_IDLE;
-
 			break;
+
 		case ADK_BUSY:
 			ADK_Machine.state = ADK_IDLE;
 			ADK_Machine.outSize = 0;
 			break;
 
+		default:
+			break;
 	}
 	status = USBH_OK;
 	return status;
 }
 
+/**
+  * @brief  USBH_ADK_getProtocol
+  *         Inquiry protocol version number from Android device.
+  * @param  pdev: Selected device
+  * @param  hdev: Selected device property
+  * @retval USBH_Status
+  */
 static USBH_Status USBH_ADK_getProtocol ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
 {
-	USBH_Status status;
 	phost->Control.setup.b.bmRequestType = USB_D2H | USB_REQ_TYPE_VENDOR | USB_REQ_RECIPIENT_DEVICE;
 	phost->Control.setup.b.bRequest = ACCESSORY_GET_PROTOCOL;
 	phost->Control.setup.b.wValue.w = 0;
@@ -365,15 +381,20 @@ static USBH_Status USBH_ADK_getProtocol ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *
 	return USBH_CtlReq(pdev, phost, &ADK_Machine.protocol , 2 );
 }
 
+/**
+  * @brief  USBH_ADK_sendString
+  *         Send identifying string information to the Android device.
+  * @param  pdev: Selected device
+  * @param  hdev: Selected device property
+  * @param  index: String ID
+  * @param  buff: Identifying string
+  * @retval USBH_Status
+  */
 static USBH_Status USBH_ADK_sendString ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost, uint16_t index, uint8_t* buff)
 {
-	USBH_Status status;
-	URB_STATE URB_Status = URB_IDLE;
 	uint16_t length;
 	length = (uint16_t)strlen(buff)+1;
-#ifdef DEBUG
-	uint8_t temp[80];
-#endif
+
 	phost->Control.setup.b.bmRequestType = USB_H2D | USB_REQ_TYPE_VENDOR | USB_REQ_RECIPIENT_DEVICE;
 	phost->Control.setup.b.bRequest = ACCESSORY_SEND_STRING;
 	phost->Control.setup.b.wValue.w = 0;
@@ -384,6 +405,13 @@ static USBH_Status USBH_ADK_sendString ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *p
 	return USBH_CtlReq(pdev, phost, buff , length );
 }
 
+/**
+  * @brief  USBH_ADK_switch
+  *         Request the Android device start up in accessory mode.
+  * @param  pdev: Selected device
+  * @param  hdev: Selected device property
+  * @retval USBH_Status
+  */
 static USBH_Status USBH_ADK_switch ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
 {
 	phost->Control.setup.b.bmRequestType = USB_H2D | USB_REQ_TYPE_VENDOR | USB_REQ_RECIPIENT_DEVICE;
@@ -396,6 +424,13 @@ static USBH_Status USBH_ADK_switch ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost
 	return USBH_CtlReq(pdev, phost, 0 , 0);
 }
 
+/**
+  * @brief  USBH_ADK_configAndroid
+  *         Setup bulk transfer endpoint and open channel.
+  * @param  pdev: Selected device
+  * @param  hdev: Selected device property
+  * @retval USBH_Status
+  */
 static USBH_Status USBH_ADK_configAndroid ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
 {
 	USBH_HOST *pphost = phost;
@@ -445,6 +480,14 @@ static USBH_Status USBH_ADK_configAndroid ( USB_OTG_CORE_HANDLE *pdev, USBH_HOST
 	return USBH_OK;
 }
 
+/**
+  * @brief  USBH_ADK_write
+  *         Send data to Android device.
+  * @param  pdev: Selected device
+  * @param  buff: send data
+  * @param  len : send data length
+  * @retval USBH_Status
+  */
 USBH_Status USBH_ADK_write(USB_OTG_CORE_HANDLE *pdev, uint8_t *buff, uint16_t len)
 {
 	memcpy(ADK_Machine.outbuff, buff, len);
@@ -452,15 +495,31 @@ USBH_Status USBH_ADK_write(USB_OTG_CORE_HANDLE *pdev, uint8_t *buff, uint16_t le
 	return USBH_OK;
 }
 
+/**
+  * @brief  USBH_ADK_read
+  *         Receive data from  Android device.
+  * @param  pdev: Selected device
+  * @param  buff: receive data
+  * @param  len : receive data buffer length
+  * @retval received data length
+  */
 uint16_t USBH_ADK_read(USB_OTG_CORE_HANDLE *pdev, uint8_t *buff, uint16_t len)
 {
-	uint32_t xfercount = 0;
+	uint32_t xfercount;
 	xfercount = HCD_GetXferCnt(pdev, ADK_Machine.hc_num_in);
-	memcpy(buff, ADK_Machine.inbuff, len);
-	ADK_Machine.inSize = 0;
-	return len;
+	if( xfercount > 0 ){
+		memcpy(buff, ADK_Machine.inbuff, len);
+		ADK_Machine.inSize = 0;
+	}
+	return (uint16_t)xfercount;
 }
 
+/**
+  * @brief  USBH_ADK_getStatus
+  *         Return ADK_Machine.state
+  * @param  None
+  * @retval ADK_Machine.state
+  */
 ADK_State USBH_ADK_getStatus(void)
 {
 	return ADK_Machine.state;

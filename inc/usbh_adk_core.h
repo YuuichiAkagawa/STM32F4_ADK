@@ -34,7 +34,7 @@
 #include "usbh_stdreq.h"
 #include "usbh_core.h"
 
-/** @defgroup USBH_HID_CORE_Exported_Defines
+/** @defgroup USBH_ADK_CORE_Exported_Defines
   * @{
   */
 #define USB_ACCESSORY_VENDOR_ID         0x18D1
@@ -53,7 +53,7 @@
 #define ACCESSORY_START                 53
 
 #define USBH_ADK_DATA_SIZE	64
-
+#define USBH_ADK_NAK_RETRY_LIMIT 1
 /**
   * @}
   */
@@ -95,7 +95,7 @@ typedef enum
 ADK_State;
 
 /* Structure for ADK process */
-typedef struct _ADK_Machine
+typedef struct _ADK_Process
 {
   uint8_t              hc_num_in;
   uint8_t              hc_num_out;
