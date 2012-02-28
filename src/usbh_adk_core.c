@@ -3,7 +3,7 @@
   * @file    usbh_adk_core.c
   * @author  Yuuichi Akagawa
   * @version V1.0.0
-  * @date    2012/02/27
+  * @date    2012/02/28
   * @brief   Android Open Accessory implementation
   ******************************************************************************
   * @attention
@@ -158,7 +158,7 @@ void USBH_ADK_InterfaceDeInit ( USB_OTG_CORE_HANDLE *pdev, void *phost)
 	    ADK_Machine.hc_num_in = 0;     /* Reset the Channel as Free */
 	}
 
-	//restore default value
+	//restore NAK retry limit to default value
 	pdev->host.NakRetryLimit = USB_NAK_RETRY_ATTEMPTS;
 }
 
@@ -180,7 +180,10 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 #ifdef DEBUG
 			xputs("> USB_ADK_ClassRequest\n");
 #endif
-			//check vaild device
+			// minimize NAK retry limit
+		  	pdev->host.NakRetryLimit = USBH_ADK_NAK_RETRY_LIMIT;
+
+		  	//check vaild device
 			if(pphost->device_prop.Dev_Desc.idVendor == USB_ACCESSORY_VENDOR_ID &&
 			   (pphost->device_prop.Dev_Desc.idProduct == USB_ACCESSORY_PRODUCT_ID ||
 			    pphost->device_prop.Dev_Desc.idProduct == USB_ACCESSORY_ADB_PRODUCT_ID)
@@ -199,8 +202,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 #ifdef DEBUG
 					xputs("ADK:device supports protcol 1\n");
 #endif
-					/* minimize NAK retry limit */
-				  	pdev->host.NakRetryLimit = USBH_ADK_NAK_RETRY_LIMIT;
 				} else {
 					ADK_Machine.initstate = ADK_INIT_FAILED;
 		#ifdef DEBUG
@@ -219,25 +220,25 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			break;
 	  case ADK_INIT_SEND_MODEL:
 			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_MODEL, (uint8_t*)ADK_Machine.acc_model)== USBH_OK ){
-				ADK_Machine.initstate = ADK_INIT_SEND_VERSION;
+				ADK_Machine.initstate = ADK_INIT_SEND_DESCRIPTION;
 #ifdef DEBUG
 					xputs("ADK:SEND_MODEL\n");
 #endif
 			}
 			break;
-	  case ADK_INIT_SEND_VERSION:
-			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_VERSION, (uint8_t*)ADK_Machine.acc_version)== USBH_OK ){
-				ADK_Machine.initstate = ADK_INIT_SEND_DESCRIPTION;
+	  case ADK_INIT_SEND_DESCRIPTION:
+			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_DESCRIPTION, (uint8_t*)ADK_Machine.acc_description)== USBH_OK ){
+				ADK_Machine.initstate = ADK_INIT_SEND_VERSION;
 #ifdef DEBUG
-					xputs("ADK:SEND_VERSION\n");
+					xputs("ADK:SEND_DESCRIPTION\n");
 #endif
 			}
 			break;
-	  case ADK_INIT_SEND_DESCRIPTION:
-			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_DESCRIPTION, (uint8_t*)ADK_Machine.acc_description)== USBH_OK ){
+	  case ADK_INIT_SEND_VERSION:
+			if( USBH_ADK_sendString ( pdev, phost, ACCESSORY_STRING_VERSION, (uint8_t*)ADK_Machine.acc_version)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_SEND_URI;
 #ifdef DEBUG
-					xputs("ADK:SEND_DESCRIPTION\n");
+					xputs("ADK:SEND_VERSION\n");
 #endif
 			}
 			break;
@@ -290,8 +291,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 	  case ADK_INIT_DONE:
 		  	status = USBH_OK;
 		  	ADK_Machine.state = ADK_IDLE;
-			/* minimize NAK retry limit */
-		  	pdev->host.NakRetryLimit = USBH_ADK_NAK_RETRY_LIMIT;
 #ifdef DEBUG
 					xputs("ADK:configuration complete.\n");
 #endif
@@ -346,7 +345,7 @@ static USBH_Status USBH_ADK_Handle(USB_OTG_CORE_HANDLE *pdev, void   *phost)
 			if( URB_Status > URB_DONE){
 				break;
 			}
-			USBH_BulkReceiveData(pdev, ADK_Machine.inbuff, 2, ADK_Machine.hc_num_in);
+			USBH_BulkReceiveData(pdev, ADK_Machine.inbuff, USBH_ADK_DATA_SIZE, ADK_Machine.hc_num_in);
 			ADK_Machine.state = ADK_IDLE;
 			break;
 
