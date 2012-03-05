@@ -3,7 +3,7 @@
   * @file    main.c
   * @author  Yuuichi Akagawa
   * @version V1.0.0
-  * @date    2012/02/27
+  * @date    2012/03/05
   * @brief   Android Open Accessory implementation
   ******************************************************************************
   * @attention
@@ -103,6 +103,7 @@ int main(void)
 
     /* Accessory Mode enabled */
     if( USBH_ADK_getStatus() == ADK_IDLE) {
+	/* --------------------------------------------------------------------------- */
     	// in
     	len = USBH_ADK_read(&USB_OTG_Core_dev, msg, sizeof(msg));
     	if( len > 0 ){
@@ -125,7 +126,8 @@ int main(void)
     		msg[1] = 0;
 			STM_EVAL_LEDOff(LED6);
     	}
-    	USBH_ADK_write(&USB_OTG_Core_dev, msg, 2);
+    	USBH_ADK_write(&USB_OTG_Core_dev, msg, sizeof(msg));
+	/* --------------------------------------------------------------------------- */
     }
     Delay(1);
 

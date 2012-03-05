@@ -1,9 +1,9 @@
 /**
   ******************************************************************************
   * @file    usbh_usr.c
-  * @author  MCD Application Team
+  * @author  MCD Application Team and modified by Yuuichi Akagawa
   * @version V2.0.0
-  * @date    22-July-2011
+  * @date    22-July-2011, 2012/03/05
   * @brief   This file includes the user application layer
   ******************************************************************************
   * @attention
@@ -295,6 +295,9 @@ void USBH_USR_Configuration_DescAvailable(USBH_CfgDesc_TypeDef * cfgDesc,
 
   sprintf(temp, "Interface : %02X %02X\n", (uint8_t)(*id).bInterfaceClass, (uint8_t)(*id).bInterfaceSubClass);
   xputs(temp);
+  sprintf((char *)temp , "Power info: bmAttributes:0x%02X, bMaxPower:%d\n",cfgDesc->bmAttributes, cfgDesc->bMaxPower );
+  xputs(temp);
+
 #endif
 }
 

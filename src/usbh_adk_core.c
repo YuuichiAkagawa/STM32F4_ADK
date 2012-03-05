@@ -3,7 +3,7 @@
   * @file    usbh_adk_core.c
   * @author  Yuuichi Akagawa
   * @version V1.0.0
-  * @date    2012/02/28
+  * @date    2012/03/05
   * @brief   Android Open Accessory implementation
   ******************************************************************************
   * @attention
@@ -101,7 +101,7 @@ void USBH_ADK_Init(uint8_t* manufacture, uint8_t* model, uint8_t* description, u
 	ADK_Machine.acc_serial[63] = '\0';
 
 	ADK_Machine.initstate = ADK_INIT_SETUP;
-	ADK_Machine.state     = ADK_ERROR;
+	ADK_Machine.state     = ADK_INITIALIZING;//ADK_ERROR;
 }
 
 /**
@@ -139,10 +139,10 @@ void USBH_ADK_InterfaceDeInit ( USB_OTG_CORE_HANDLE *pdev, void *phost)
 	ADK_Machine.initstate = ADK_INIT_SETUP;
 
 	/* Switch to accessory mode,  Re-enumeration */
-	if(ADK_Machine.state == ADK_INITIALIZING)
-	{
-		pdev->host.ConnSts = 1;
-	}
+//	if(ADK_Machine.state == ADK_INITIALIZING)
+//	{
+//		pdev->host.ConnSts = 1;
+//	}
 
 	/* close bulk transfer pipe */
 	if ( ADK_Machine.hc_num_out)
@@ -263,7 +263,6 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 				ADK_Machine.initstate = ADK_INIT_GET_DEVDESC;
 #ifdef DEBUG
 					xputs("ADK:switch to accessory mode\n");
-					ADK_Machine.state = ADK_INITIALIZING;
 #endif
 			}
 			break;
