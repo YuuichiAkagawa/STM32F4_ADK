@@ -37,9 +37,15 @@
 /** @defgroup USBH_ADK_CORE_Exported_Defines
   * @{
   */
+//AOA 1.0
 #define USB_ACCESSORY_VENDOR_ID         0x18D1
 #define USB_ACCESSORY_PRODUCT_ID        0x2D00
 #define USB_ACCESSORY_ADB_PRODUCT_ID    0x2D01
+//AOA 2.0
+#define USB_AUDIO_PRODUCT_ID               0x2D02
+#define USB_AUDIO_ADB_PRODUCT_ID           0x2D03
+#define USB_ACCESSORY_AUDIO_PRODUCT_ID     0x2D04
+#define USB_ACCESSORY_AUDIO_ADB_PRODUCT_ID 0x2D05
 
 #define ACCESSORY_STRING_MANUFACTURER   0
 #define ACCESSORY_STRING_MODEL          1
@@ -48,9 +54,17 @@
 #define ACCESSORY_STRING_URI            4
 #define ACCESSORY_STRING_SERIAL         5
 
+//AOA 1.0
 #define ACCESSORY_GET_PROTOCOL          51
 #define ACCESSORY_SEND_STRING           52
 #define ACCESSORY_START                 53
+
+//AOA 2.0
+#define ACCESSORY_REGISTER_HID          54
+#define ACCESSORY_UNREGISTER_HID        55
+#define ACCESSORY_SET_HID_REPORT_DESC   56
+#define ACCESSORY_SEND_HID_EVENT        57
+#define ACCESSORY_SET_AUDIO_MODE        58
 
 #define USBH_ADK_DATA_SIZE	64
 #define USBH_ADK_NAK_RETRY_LIMIT 1
@@ -97,6 +111,7 @@ ADK_State;
 /* Structure for ADK process */
 typedef struct _ADK_Process
 {
+  uint16_t             pid;
   uint8_t              hc_num_in;
   uint8_t              hc_num_out;
   uint8_t              BulkOutEp;

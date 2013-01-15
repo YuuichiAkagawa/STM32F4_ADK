@@ -94,7 +94,7 @@ int main(void)
             &USR_Callbacks);
 
   /* Init ADK Library */
-  USBH_ADK_Init("ammlab.org", "HelloADK", "DemoKit", "1.0", "http://www.ammlab.org",  "1234567");
+  USBH_ADK_Init("ammlab.org", "HelloADK", "HelloADK for GR-SAKURA for STM32F4", "1.0", "https://play.google.com/store/apps/details?id=org.ammlab.android.helloadk",  "1234567");
 
   while (1)
   {

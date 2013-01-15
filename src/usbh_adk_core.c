@@ -159,7 +159,7 @@ void USBH_ADK_InterfaceDeInit ( USB_OTG_CORE_HANDLE *pdev, void *phost)
 	}
 
 	//restore NAK retry limit to default value
-	pdev->host.NakRetryLimit = USB_NAK_RETRY_ATTEMPTS;
+//	pdev->host.NakRetryLimit = USB_NAK_RETRY_ATTEMPTS;
 }
 
 /**
@@ -181,7 +181,7 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 			xputs("> USB_ADK_ClassRequest\n");
 #endif
 			// minimize NAK retry limit
-		  	pdev->host.NakRetryLimit = USBH_ADK_NAK_RETRY_LIMIT;
+//		  	pdev->host.NakRetryLimit = USBH_ADK_NAK_RETRY_LIMIT;
 
 		  	//check vaild device
 			if(pphost->device_prop.Dev_Desc.idVendor == USB_ACCESSORY_VENDOR_ID &&
@@ -197,7 +197,7 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 
 		case ADK_INIT_GET_PROTOCOL:
 			if ( USBH_ADK_getProtocol ( pdev, phost ) == USBH_OK ){
-				if (ADK_Machine.protocol == 1) {
+				if (ADK_Machine.protocol >= 1) {
 					ADK_Machine.initstate = ADK_INIT_SEND_MANUFACTURER;
 #ifdef DEBUG
 					xputs("ADK:device supports protcol 1\n");
@@ -270,6 +270,7 @@ static USBH_Status USBH_ADK_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
 	  case ADK_INIT_GET_DEVDESC:
 			if( USBH_Get_DevDesc(pdev , phost, USB_DEVICE_DESC_SIZE)== USBH_OK ){
 				ADK_Machine.initstate = ADK_INIT_DONE;
+				ADK_Machine.pid = pphost->device_prop.Dev_Desc.idProduct;
 				//check vaild device
 				if(pphost->device_prop.Dev_Desc.idVendor == USB_ACCESSORY_VENDOR_ID &&
 				   (pphost->device_prop.Dev_Desc.idProduct == USB_ACCESSORY_PRODUCT_ID ||
